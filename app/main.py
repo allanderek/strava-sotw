@@ -40,7 +40,7 @@ A simple website to show a group of athletes competing over a particular segment
 <h1>Segment of the Week</h1>
 <h2>{{segment_times.segment}}</h2>
 <ol>
-{% for (athlete, time) in segment_times.times.items() %}
+{% for (athlete, time) in segment_times.times %}
     <li> {{athlete.first_name}} {{athlete.last_name}} - {{time}} </li>
 {% endfor %}
 </ol>
@@ -80,15 +80,15 @@ class Athlete(object):
         self.first_name = self.json['firstname']
         self.last_name = self.json['lastname']
 
-def get_athlete_segment_time(athlete_id, segment):
-    url_template = 'https://www.strava.com/api/v3/segments/{0}/all_efforts'
-    url = url_template.format(segment)
-    parameters = {'athlete_id': athlete_id,
-                  'access_token': access_token}
-    response = requests.get(url, parameters)
-    json = response.json()
-    times = [result['elapsed_time'] for result in json]
-    return min(times)
+    def get_segment_time(self, segment):
+        url_template = 'https://www.strava.com/api/v3/segments/{0}/all_efforts'
+        url = url_template.format(segment)
+        parameters = {'athlete_id': self.id,
+                      'access_token': access_token}
+        response = requests.get(url, parameters)
+        json = response.json()
+        times = [result['elapsed_time'] for result in json]
+        return min(times)
 
 class SegmentTimes(object):
     def __init__(self, segment, athletes):
@@ -97,9 +97,9 @@ class SegmentTimes(object):
         self.times = dict()
 
     def refresh_times(self):
-        for athlete in self.athletes:
-            self.times[athlete] = get_athlete_segment_time(athlete.id,
-                                                           self.segment)
+        self.times = [(a, a.get_segment_time(self.segment))
+                       for a in self.athletes]
+        self.times.sort(key=lambda p: p[1])
 
 bottle.run(host='localhost', port=8080)
 
