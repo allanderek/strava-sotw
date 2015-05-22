@@ -1,7 +1,9 @@
-from bottle import route, default_app
+from bottle import route
 import bottle
 import jinja2
 import requests
+
+application = bottle.default_app()
 
 root_template_string = """
 <!DOCTYPE>
@@ -101,5 +103,6 @@ class SegmentTimes(object):
                        for a in self.athletes]
         self.times.sort(key=lambda p: p[1])
 
-bottle.run(host='localhost', port=8080)
+if __name__ == "__main__":
+    bottle.run(host='localhost', port=8080, debug=True)
 
