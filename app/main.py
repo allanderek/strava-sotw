@@ -191,6 +191,13 @@ class SimpleTest(unittest.TestCase):
             time_string_begin = "<li> {0} - ".format(name)
             self.assertIn(time_string_begin, response)
 
+    def test_invalid_segment(self):
+        test_app = webtest.TestApp(application)
+        response = test_app.get('/times/1/22978393')
+        self.assertEqual(response.status, '200 OK')
+        expected = 'Message: Invalid segment number: 22978393'
+        self.assertIn(expected, response)
+
 if __name__ == "__main__":
     bottle.run(host='localhost', port=8080, debug=True)
 
