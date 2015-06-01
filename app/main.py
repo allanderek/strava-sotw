@@ -74,12 +74,16 @@ welcome_template = jinja2.Template(welcome_template_string)
 
 
 @route('/')
-def welcome():
+def welcome(message=None):
     """ Returns the welcome page."""
     group_ids = database.get_groups()
-    return welcome_template.render(root_template=root_template,
-                                   root_url=bottle.request.url,
-                                   group_ids=group_ids)
+    template_dict = {'root_template': root_template,
+                     'root_url': bottle.request.url,
+                     'group_ids': group_ids}
+    if message is not None:
+        template_dict['message'] = message
+    return welcome_template.render(**template_dict)
+
 
 times_template_string = """
 {% extends root_template %}
@@ -110,7 +114,11 @@ def group_segment_times(group_id, segment_id):
     athlete_ids = database.get_group(group_id)
     athletes = [Athlete(id) for id in athlete_ids]
     segment_times = SegmentTimes(str(segment_id), athletes)
-    segment_times.refresh_times()
+    try:
+        segment_times.refresh_times()
+    except InvalidSegment as exc:
+        message = "Invalid segment number: " + str(exc.segment)
+        return welcome(message=message)
     return times_template.render(root_template=root_template,
                                  segment_times=segment_times)
 
@@ -126,6 +134,10 @@ def get_athlete_info(athlete_id):
     json = response.json()
     return json
 
+class InvalidSegment(Exception):
+    def __init__(self, segment):
+        self.segment = segment
+
 class Athlete(object):
     def __init__(self, athlete_id):
         self.id = athlete_id
@@ -139,6 +151,8 @@ class Athlete(object):
         parameters = {'athlete_id': self.id,
                       'access_token': access_token}
         response = requests.get(url, parameters)
+        if response.status_code != 200:
+            raise InvalidSegment(segment)
         json = response.json()
         times = [result['elapsed_time'] for result in json]
         return min(times) if times else "no time"
