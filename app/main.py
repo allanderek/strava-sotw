@@ -86,12 +86,19 @@ times_template_string = """
 {% block content %}
 A simple website to show a group of athletes competing over a particular segment.
 <h1>Segment of the Week</h1>
-<h2>{{segment_times.segment}}</h2>
+<h2>{{segment_times.segment}} - best times</h2>
 <ol>
 {% for (athlete, time) in segment_times.times %}
     <li> {{athlete.first_name}} {{athlete.last_name}} - {{time}} </li>
 {% endfor %}
 </ol>
+<h2>{{segment_times.segment}} - No times</h2>
+These athletes have not yet set a time for this segment:
+<ul>
+{% for athlete in segment_times.no_times %}
+    <li> {{athlete.first_name}} {{athlete.last_name}}</li>
+{% endfor %}
+</ul>
 {% endblock %}
 """
 times_template = jinja2.Template(times_template_string)
@@ -134,17 +141,19 @@ class Athlete(object):
         response = requests.get(url, parameters)
         json = response.json()
         times = [result['elapsed_time'] for result in json]
-        return min(times)
+        return min(times) if times else "no time"
 
 class SegmentTimes(object):
     def __init__(self, segment, athletes):
         self.segment = segment
         self.athletes = athletes
-        self.times = dict()
+        self.times = []
+        self.no_times = []
 
     def refresh_times(self):
-        self.times = [(a, a.get_segment_time(self.segment))
-                       for a in self.athletes]
+        times = [(a, a.get_segment_time(self.segment)) for a in self.athletes]
+        self.no_times = [a for (a, t) in times if t == 'no time']
+        self.times = [(a, t) for (a, t) in times if t != 'no time']
         self.times.sort(key=lambda p: p[1])
 
 
