@@ -9,9 +9,7 @@ root_template_string = """
 <!DOCTYPE>
 <html>
 <head>
-  <title>{% block title %}{% endblock %} - Strava
-  <b>S</b>egment <b>O</b>f <b>T</b>he <b>W</b>eek
-  </title>
+  <title>Strava - <b>S</b>egment <b>O</b>f <b>T</b>he <b>W</b>eek</title>
 </head>
 <body>
 <div class="container" style="display:table">
@@ -36,7 +34,6 @@ root_template = jinja2.Template(root_template_string)
 
 times_template_string = """
 {% extends root_template %}
-{% block title %}Segment of the Week - Times{% endblock %}
 {% block content %}
 A simple website to show a group of athletes competing over a particular segment.
 <h1>Segment of the Week</h1>
@@ -102,6 +99,18 @@ class SegmentTimes(object):
         self.times = [(a, a.get_segment_time(self.segment))
                        for a in self.athletes]
         self.times.sort(key=lambda p: p[1])
+
+
+import unittest
+import webtest
+
+class SimpleTest(unittest.TestCase):
+    def test_welcome(self):
+        test_app = webtest.TestApp(application)
+        response = test_app.get('/')
+        self.assertEqual(response.status, '200 OK')
+        expected = '<b>S</b>egment <b>O</b>f <b>T</b>he <b>W</b>eek'
+        self.assertIn(expected, response)
 
 if __name__ == "__main__":
     bottle.run(host='localhost', port=8080, debug=True)
