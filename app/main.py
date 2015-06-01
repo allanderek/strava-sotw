@@ -77,8 +77,10 @@ welcome_template = jinja2.Template(welcome_template_string)
 def welcome(message=None):
     """ Returns the welcome page."""
     group_ids = database.get_groups()
+    urlparts = bottle.request.urlparts
+    root_url = "{0}://{1}/".format(urlparts.scheme, urlparts.netloc)
     template_dict = {'root_template': root_template,
-                     'root_url': bottle.request.url,
+                     'root_url': root_url,
                      'group_ids': group_ids}
     if message is not None:
         template_dict['message'] = message
