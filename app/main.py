@@ -96,13 +96,15 @@ A simple website to show a group of athletes competing over a particular segment
     <li> {{athlete.first_name}} {{athlete.last_name}} - {{time}} </li>
 {% endfor %}
 </ol>
-<h2>{{segment_times.segment}} - No times</h2>
-These athletes have not yet set a time for this segment:
-<ul>
-{% for athlete in segment_times.no_times %}
-    <li> {{athlete.first_name}} {{athlete.last_name}}</li>
-{% endfor %}
-</ul>
+{% if segment_times.no_times %}
+    <h2>{{segment_times.segment}} - No times</h2>
+    These athletes have not yet set a time for this segment:
+    <ul>
+        {% for athlete in segment_times.no_times %}
+            <li> {{athlete.first_name}} {{athlete.last_name}}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
 {% endblock %}
 """
 times_template = jinja2.Template(times_template_string)
