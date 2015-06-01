@@ -63,6 +63,10 @@ def coverage():
     os.system("coverage report -m")
     os.system("coverage html")
 
+@manage.command
+def runserver(reloader=False, debug=False, port=5000):
+    """ Run the application. """
+    main.application.run(reloader=reloader, debug=debug, port=port)
 
 if __name__ == '__main__':
     manage()
