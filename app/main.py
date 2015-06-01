@@ -3,20 +3,36 @@ import bottle
 import jinja2
 import requests
 
+class Database(object):
+    """ This is the interface to the database. Initially to get things started
+        we do not need to actually create a persistant storage database because
+        we only have one permanent group with an immutable set of athletes
+    """
+    def __init__(self):
+        pass
+    def get_group(self, group_id):
+        if group_id == 1:
+            return ['4634808', '2861283', '3919949', '1469231']
+        else:
+            raise KeyError
+    def get_groups(self):
+        return ['1']
+
+database = Database()
 application = bottle.default_app()
 
 root_template_string = """
 <!DOCTYPE>
 <html>
 <head>
-  <title>Strava - <b>S</b>egment <b>O</b>f <b>T</b>he <b>W</b>eek</title>
+  <title>Strava - Segment Of The Week</title>
 </head>
 <body>
 <div class="container" style="display:table">
 <div class="navigation" style="display:table-cell;
      vertical-align:top; padding-right:10px">
 <ul>
-  <li><a href="/">Times</a></li>
+  <li><a href="/">Welcome</a></li>
 </ul>
 </div>
 <div class="main-content" style="display:table-cell; vertical-align:top;">
@@ -32,6 +48,39 @@ root_template_string = """
 root_template = jinja2.Template(root_template_string)
 
 
+welcome_template_string = """
+{% extends root_template %}
+{% block content %}
+<h1><b>S</b>egment <b>O</b>f <b>T</b>he <b>W</b>eek</h2>
+<p>
+A simple website to show a group of athletes competing over a particular segment.
+To view times for a particular group over a particular segment create the url
+of the form: <code>{{root_url}}times/&lt;group number&gt;/&lt;segment number&gt;</code>.
+</p>
+<p>
+{% set example_url = root_url + 'times/1/8428538' %}
+For example: <a href="{{example_url}}">{{example_url}}</a>
+</p>
+<h3>Groups</h3>
+<ul>
+    {% for group in group_ids %}
+    <li> {{group}} </li>
+    {% endfor %}
+</ul>
+</ol>
+{% endblock %}
+"""
+welcome_template = jinja2.Template(welcome_template_string)
+
+
+@route('/')
+def welcome():
+    """ Returns the welcome page."""
+    group_ids = database.get_groups()
+    return welcome_template.render(root_template=root_template,
+                                   root_url=bottle.request.url,
+                                   group_ids=group_ids)
+
 times_template_string = """
 {% extends root_template %}
 {% block content %}
@@ -43,19 +92,17 @@ A simple website to show a group of athletes competing over a particular segment
     <li> {{athlete.first_name}} {{athlete.last_name}} - {{time}} </li>
 {% endfor %}
 </ol>
-
-
 {% endblock %}
 """
 times_template = jinja2.Template(times_template_string)
 
 
-@route('/')
-def welcome():
+@route('/times/<group_id:int>/<segment_id:int>')
+def group_segment_times(group_id, segment_id):
     """ Returns the welcome page."""
-    athlete_ids = ['4634808', '2861283', '3919949', '1469231']
+    athlete_ids = database.get_group(group_id)
     athletes = [Athlete(id) for id in athlete_ids]
-    segment_times = SegmentTimes('8428538', athletes)
+    segment_times = SegmentTimes(str(segment_id), athletes)
     segment_times.refresh_times()
     return times_template.render(root_template=root_template,
                                  segment_times=segment_times)
@@ -111,6 +158,15 @@ class SimpleTest(unittest.TestCase):
         self.assertEqual(response.status, '200 OK')
         expected = '<b>S</b>egment <b>O</b>f <b>T</b>he <b>W</b>eek'
         self.assertIn(expected, response)
+
+    def test_times(self):
+        test_app = webtest.TestApp(application)
+        response = test_app.get('/times/1/8428538')
+        self.assertEqual(response.status, '200 OK')
+        for (name) in ["Ross Houston", "Pat Gie",
+                       "Jonathan Carpenter", "Christopher O'Brien"]:
+            time_string_begin = "<li> {0} - ".format(name)
+            self.assertIn(time_string_begin, response)
 
 if __name__ == "__main__":
     bottle.run(host='localhost', port=8080, debug=True)
