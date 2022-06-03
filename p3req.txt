@@ -1,5 +1,5 @@
 beautifulsoup4==4.3.2
-bottle==0.12.8
+bottle==0.12.20
 bottle-manage==0.2.2
 Jinja2==2.7.3
 MarkupSafe==0.23
